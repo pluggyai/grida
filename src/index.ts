@@ -1,9 +1,10 @@
-import frida, { Scope } from 'frida';
+import { Scope } from 'frida';
 import { readFileSync, writeFileSync } from 'fs';
 import express from 'express';
 import {
   downloadApk,
   getApplication,
+  getDevice,
   getRunningJobs,
   openJadx,
   registerLogListener,
@@ -17,8 +18,6 @@ import expressWs from 'express-ws';
 const FRIDA_UNIVERSAL_SCRIPT = readFileSync(
   './scripts/frida-universal.js'
 ).toString();
-
-writeFileSync('log.txt', '');
 
 const { app } = expressWs(express());
 
@@ -47,13 +46,9 @@ app.get('/', (req, res) => {
   res.send(readFileSync('./src/pages/index.html').toString());
 });
 
-app.get('/api/logs', (req, res) => {
-  res.send(readFileSync('./log.txt').toString());
-});
-
 app.post('/api/open-in-jadx/:identifier', async (req, res) => {
   const identifier = req.params.identifier;
-  const device = await frida.getUsbDevice();
+  const device = await getDevice();
   const application = await getApplication(device, identifier);
   const apkPath = downloadApk(application);
   openJadx(apkPath);
@@ -61,7 +56,7 @@ app.post('/api/open-in-jadx/:identifier', async (req, res) => {
 });
 
 app.get('/api/applications', async (req, res) => {
-  const device = await frida.getUsbDevice();
+  const device = await getDevice();
   const applications = await device.enumerateApplications({
     scope: Scope.Full,
   });
@@ -69,7 +64,7 @@ app.get('/api/applications', async (req, res) => {
 });
 
 app.post('/api/open-application', async (req, res) => {
-  const device = await frida.getUsbDevice();
+  const device = await getDevice();
   const { identifier, sslpinning, scripts } = req.body;
   const session = await spawnByIdentifier(device, identifier);
   if (sslpinning) {

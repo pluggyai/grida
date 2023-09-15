@@ -64,15 +64,15 @@
                                 class="me-2" width="20" height="20">{{selectedApplication.name}}
                         </h3>
                         <p><code>{{selectedApplication.identifier}}</code></p>
-
+                        <h5>Standard scripts</h5>
                         <div class="form-check mb-2">
                             <input type="checkbox" class="form-check-input" id="sslpinning" v-model="pinning">
                             <label class="form-check-label" for="sslpinning">SSL Pinning</label>
                         </div>
                         <div v-if="addedScripts.length > 0">
-                            <h5>Startup scripts</h5>
+                            <h5>Custom scripts</h5>
                             <ul class="list-group ">
-                                <a class="code list-group-item list-group-item-action my-2"
+                                <a class="code list-group-item list-group-item-action"
                                     v-for="addedScript in addedScripts">
                                     {{addedScript.name}}</a>
                             </ul>
@@ -93,7 +93,7 @@
                                             v-model="addingCustomScriptName" placeholder="Name">
                                     </div>
                                     <div class="mb-3">
-                                        <textarea class="form-control code" id="script-code" rows="30"
+                                        <textarea class="form-control code" id="script-code" rows="15"
                                             v-model="addingCustomScriptCode" placeholder="Script"></textarea>
                                     </div>
                                     <div class="d-flex flex-row-reverse">

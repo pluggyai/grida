@@ -1,4 +1,4 @@
-import { Application, Device, Script, Session } from 'frida';
+import frida, { Application, Device, Script, Session } from 'frida';
 import shelljs from 'shelljs';
 import fs from 'fs';
 import filenamify from 'filenamify';
@@ -37,6 +37,16 @@ export function removeJob(job: Job): void {
 
 export function getRunningJobs(): Job[] {
   return runningJobs;
+}
+
+export async function getDevice() {
+  try {
+    return await frida.getUsbDevice();
+  } catch (error) {
+    // Try adb devices to wake up daemon
+    shelljs.exec('adb devices');
+    return await frida.getUsbDevice();
+  }
 }
 
 export async function runJob(
@@ -107,8 +117,4 @@ export async function spawnApplication(
   application: Application
 ): Promise<Session> {
   return spawnByIdentifier(device, application.identifier);
-}
-
-export function logToFile(message: string) {
-  fs.appendFileSync('./log.txt', `${message}\n`);
 }
