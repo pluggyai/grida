@@ -1,4 +1,12 @@
-import frida, { Application, Device, Script, Session } from 'frida';
+import frida, {
+  Application,
+  Cancellable,
+  Device,
+  Message,
+  Script,
+  SendMessage,
+  Session,
+} from 'frida';
 import shelljs from 'shelljs';
 import filenamify from 'filenamify';
 import crypto from 'crypto';
@@ -20,11 +28,12 @@ export async function registerLogListener(
   logListeners.push(callback);
 }
 
+let session: Session | null = null;
 const logListeners: ((logEvent: LogEvent) => void)[] = [];
 const runningJobs: Job[] = [];
 
 export async function stopJob(jobId: string) {
-  console.log('Stopping job:', jobId)
+  console.log('Stopping job:', jobId);
   const job = getRunningJobs().find((job) => job.id === jobId);
   if (!job) {
     throw new Error(`Job ${name} not found`);
@@ -33,7 +42,9 @@ export async function stopJob(jobId: string) {
 }
 
 export function removeJobById(jobId: string): void {
-  const jobIndexToDelete = getRunningJobs().findIndex((job) => job.id === jobId);
+  const jobIndexToDelete = getRunningJobs().findIndex(
+    (job) => job.id === jobId
+  );
   if (jobIndexToDelete === -1) {
     throw new Error(`Job ${jobId} not found`);
   }
@@ -57,10 +68,14 @@ export async function getDevice() {
 export async function runJob(
   session: Session,
   name: string,
-  scriptCode: string
+  scriptCode: string,
+  messageListener?: (message: Message) => void
 ): Promise<void> {
   const jobId = crypto.randomUUID();
   const script = await session.createScript(scriptCode);
+  if (messageListener) {
+    script.message.connect((message) => messageListener(message));
+  }
   await script.load();
   script.logHandler = (level, text) => {
     for (const logListener of logListeners) {
@@ -104,7 +119,7 @@ export async function getApplication(
   const application = applications.find(
     (application) => application.identifier === identifier
   );
-  
+
   if (!application) {
     throw new Error(`Application ${identifier} not found`);
   }
@@ -116,13 +131,59 @@ export async function spawnByIdentifier(
   identifier: string
 ): Promise<Session> {
   const processId = await device.spawn([identifier]);
-  const session = await device.attach(processId);
+  session = await device.attach(processId);
   return session;
 }
 
-export async function spawnApplication(
-  device: Device,
-  application: Application
-): Promise<Session> {
-  return spawnByIdentifier(device, application.identifier);
+export function getSession(): Session {
+  if (!session) {
+    throw new Error('Session not found');
+  }
+  return session;
+}
+
+export async function createMethodHook(methodPath: string) {
+  const parts = methodPath.split('.');
+  const classPath = parts.slice(0, -1).join('.');
+  const methodName = parts.slice(-1)[0];
+  const scriptCode = getMethodHookScript(classPath, methodName);
+  console.log('Creating job');
+  await new Promise<void>((resolve, reject) => {
+    runJob(getSession(), methodPath, scriptCode, (message) => {
+      console.log('Received message', message);
+      if (message.type === 'send') {
+        console.log('Message was send, resolving');
+        resolve();
+      } else if (message.type === 'error') {
+        console.log('Message was error, rejecting');
+        reject(message.description);
+      }
+    });
+  });
+  console.log('Resolved');
+}
+
+function getMethodHookScript(classPath: string, methodName: string) {
+  return `
+Java.perform(() => {
+  const throwable = Java.use("java.lang.Throwable");
+  const targetClass = Java.use("${classPath}");
+  if (targetClass["${methodName}"] === undefined) {
+    throw new Error("Error: Method ${methodName} not found in class ${classPath}");
+    return;
+  }
+  targetClass["${methodName}"].overloads.forEach((overload) => {
+    const calleeArgTypes = overload.argumentTypes.map((arg) => arg.className);
+    const calleeArgTypesStr = calleeArgTypes.join(',');
+    const methodSignature = "${classPath}.${methodName}" + '(' + calleeArgTypesStr + ')';
+    send("Watching" + methodSignature);
+    overload.implementation = function () {
+      console.log("Calling" + methodSignature);
+      const returnValue = overload.apply(this, arguments);
+      return returnValue;
+    }
+  });
+  send("OK");
+});
+`;
 }

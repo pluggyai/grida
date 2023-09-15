@@ -2,6 +2,7 @@ import { Scope } from 'frida';
 import { readFileSync, writeFileSync } from 'fs';
 import express from 'express';
 import {
+  createMethodHook,
   downloadApk,
   getApplication,
   getDevice,
@@ -64,6 +65,16 @@ app.get('/api/applications', async (req, res) => {
   res.send(applications);
 });
 
+app.post('/api/method-hook/:methodHookPath', async (req, res) => {
+  const { methodHookPath } = req.params;
+  try {
+    await createMethodHook(methodHookPath);
+    res.send();
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
 app.post('/api/open-application', async (req, res) => {
   const device = await getDevice();
   const { identifier, sslpinning, scripts } = req.body;
@@ -89,7 +100,7 @@ app.delete('/api/running-jobs/:jobId', async (req, res) => {
 });
 
 app.post('/api/open-mitmweb', async (req, res) => {
-  openMitmweb()
+  openMitmweb();
   res.send();
 });
 

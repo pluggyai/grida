@@ -81,7 +81,6 @@
                             <a class="me-2" href="#" @click="this.addingScript = 'CUSTOM_SCRIPT'">+ Custom
                                 script</a>
                             <a href="#" @click="startAddingSavedScript">+ Saved script</a>
-                            <a href="#" @click="startAddingMethodHook">+ Hook method</a>
                         </p>
                         <div v-if="addingScript === 'CUSTOM_SCRIPT'">
                             <div class="card my-3">
@@ -122,25 +121,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- <div v-if="addingMethodHook">
-                            <div class="card my-3">
-                                <div class="card-header d-flex justify-content-between">Add method hook<button
-                                        type="button" class="btn-close" @click="cancelAddingSavedScript"></button>
-                                </div>
-                                <div class="card-body">
-                                    <input class="form-control form-control-sm mb-3" type="text"
-                                        v-model="savedScriptPathsSearch" placeholder="Search">
-                                    <ul v-if="savedScriptPaths" class="list-group list-group-flush">
-                                        <a class="list-group-item list-group-item-action"
-                                            v-for="savedScriptPath in filteredSavedScripts" href="#"
-                                            @click="addSavedScript(savedScriptPath)">
-                                            {{savedScriptPath}}</a>
-                                    </ul>
-                                    <span v-else class="spinner-border spinner-border-sm" role="status">
-                                    </span>
-                                </div>
-                            </div>
-                        </div> -->
                         <button class="btn btn-primary me-1" type="button" @click="exploreApplication">Start
                             app</button>
                         <button class="btn btn-success" type="button" @click="openInJadx">
@@ -155,9 +135,11 @@
                         <h3>Running jobs</h3>
                         <div class="col-3">
                             <ul class="list-group">
-                                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" v-for="job in runningJobs" href="#"
-                                    @click="selectJob(job)" :class="{ active: job === selectedJob }">
-                                    <span>{{job.name}}</span><i @click="stopJob(job)" class="las la-trash text-danger fs-5"></i></a>
+                                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                    v-for="job in runningJobs" href="#" @click="selectJob(job)"
+                                    :class="{ active: job === selectedJob }">
+                                    <span>{{job.name}}</span><i @click="stopJob(job)"
+                                        class="las la-trash text-danger fs-5"></i></a>
                             </ul>
                         </div>
                         <div class="col">
@@ -166,6 +148,25 @@
                                     <p>Logs</p>
                                     <textarea class="form-control code" rows="25" v-model="logs[selectedJob.id]"
                                         ref="logs" readonly></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#" @click="startAddingMethodHook">+ Hook method</a>
+                        <div v-if="addingMethodHook">
+                            <div class="card my-3">
+                                <div class="card-header d-flex justify-content-between">Add method hook<button
+                                        type="button" class="btn-close" @click="this.addingScript = null"></button>
+                                </div>
+                                <div class="card-body">
+                                    <input class="form-control form-control-sm mb-3" type="text"
+                                        v-model="methodHookPath"
+                                        placeholder="Method with fully qualified class name, e.g: com.test.MyClass.myMethod">
+                                    <div v-if="methodHookError" class="alert alert-danger" role="alert">
+                                        {{methodHookError}}
+                                    </div>
+                                    <div class="d-flex flex-row-reverse">
+                                        <button class="btn btn-primary btn-sm" @click="addMethodHook">Confirm</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -197,6 +198,9 @@
                     savedScriptPaths: null,
                     savedScriptPathsSearch: '',
                     addingSavedScriptPath: '',
+                    addingMethodHook: '',
+                    methodHookPath: '',
+                    methodHookError: null,
                     addedScripts: [],
                     logs: {},
                     selectedJob: null,
@@ -228,6 +232,11 @@
                 }
             },
             methods: {
+                startAddingMethodHook() {
+                    this.addingMethodHook = true
+                    this.methodHookPath = ''
+                    this.methodHookError = null
+                },
                 getApplicationImageBytes(application) {
                     const base64String = btoa(String.fromCharCode(...new Uint8Array(application.parameters.icons[0].image.data)));
                     return base64String
@@ -259,7 +268,7 @@
                 async fetchRunningJobs() {
                     const { data: runningJobs } = await axios.get('/api/running-jobs')
                     this.runningJobs = runningJobs
-                    const job = runningJobs.find(job => this.selectedJob && job.id === this.selectedJob.id) 
+                    const job = runningJobs.find(job => this.selectedJob && job.id === this.selectedJob.id)
                     if (!job) {
                         this.selectedJob = null
                     }
@@ -326,6 +335,14 @@
                 },
                 async openMitmweb() {
                     await axios.post('/api/open-mitmweb')
+                },
+                async addMethodHook() {
+                    try {
+                        await axios.post(`/api/method-hook/${encodeURIComponent(this.methodHookPath)}`)
+                        await this.fetchRunningJobs()
+                    } catch (error) {
+                        this.methodHookError = error.response.data
+                    }
                 }
             }
         })
