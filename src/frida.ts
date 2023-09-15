@@ -1,15 +1,16 @@
 import frida, { Application, Device, Script, Session } from 'frida';
 import shelljs from 'shelljs';
-import fs from 'fs';
 import filenamify from 'filenamify';
+import crypto from 'crypto';
 
 export type Job = {
+  id: string;
   script: Script;
   name: string;
 };
 
 export type LogEvent = {
-  jobName: string;
+  jobId: string;
   message: string;
 };
 
@@ -22,17 +23,21 @@ export async function registerLogListener(
 const logListeners: ((logEvent: LogEvent) => void)[] = [];
 const runningJobs: Job[] = [];
 
-export async function stopJob(name: string) {
-  const job = getRunningJobs().find((job) => job.name === name);
+export async function stopJob(jobId: string) {
+  console.log('Stopping job:', jobId)
+  const job = getRunningJobs().find((job) => job.id === jobId);
   if (!job) {
     throw new Error(`Job ${name} not found`);
   }
   await job.script.unload();
-  removeJob(job);
 }
 
-export function removeJob(job: Job): void {
-  runningJobs.splice(runningJobs.indexOf(job), 1);
+export function removeJobById(jobId: string): void {
+  const jobIndexToDelete = getRunningJobs().findIndex((job) => job.id === jobId);
+  if (jobIndexToDelete === -1) {
+    throw new Error(`Job ${jobId} not found`);
+  }
+  runningJobs.splice(jobIndexToDelete, 1);
 }
 
 export function getRunningJobs(): Job[] {
@@ -54,19 +59,21 @@ export async function runJob(
   name: string,
   scriptCode: string
 ): Promise<void> {
+  const jobId = crypto.randomUUID();
   const script = await session.createScript(scriptCode);
   await script.load();
   script.logHandler = (level, text) => {
     for (const logListener of logListeners) {
-      logListener({ jobName: name, message: text });
+      logListener({ jobId, message: text });
     }
   };
   const job = {
+    id: jobId,
     name,
     script,
   };
   runningJobs.push(job);
-  script.destroyed.connect(() => removeJob(job));
+  script.destroyed.connect(() => removeJobById(job.id));
 }
 
 export function openJadx(apkFileName: string) {

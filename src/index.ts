@@ -14,6 +14,7 @@ import {
 } from './frida.js';
 import { glob } from 'glob';
 import expressWs from 'express-ws';
+import { openMitmweb } from './mitm-proxy.js';
 
 const FRIDA_UNIVERSAL_SCRIPT = readFileSync(
   './scripts/frida-universal.js'
@@ -78,14 +79,18 @@ app.post('/api/open-application', async (req, res) => {
 });
 
 app.get('/api/running-jobs', async (req, res) => {
-  res.send(getRunningJobs().map((job) => ({ name: job.name })));
+  res.send(getRunningJobs().map((job) => ({ name: job.name, id: job.id })));
 });
 
-app.delete('/api/running-jobs/:name', async (req, res) => {
-  const jobName = req.params.name;
-  await stopJob(jobName);
+app.delete('/api/running-jobs/:jobId', async (req, res) => {
+  const jobId = req.params.jobId;
+  await stopJob(jobId);
+  res.send();
+});
+
+app.post('/api/open-mitmweb', async (req, res) => {
+  openMitmweb()
   res.send();
 });
 
 app.listen(3030);
-// open('http://localhost:3030');
