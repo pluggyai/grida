@@ -1,0 +1,307 @@
+<html>
+
+<head>
+    <title>Grida</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200&family=Roboto+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+    <style>
+        .code {
+            font-family: 'Roboto Mono';
+            font-size: 0.8rem;
+        }
+
+        #app {
+            font-family: 'Roboto'
+        }
+
+        .main-title {
+            color: #ffffff;
+            font-family: 'Roboto Mono';
+            background: #00a0bd;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 class="main-title pb-1 pt-1 text-center"><i class="las la-angle-right"></i>grida</h1>
+    <div class="container" id="app">
+        <div class="row">
+            <div class="col-8 offset-2">
+                <div v-if="runningApplication === null">
+                    <div v-if="selectedApplication === null">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="search" v-model="search"
+                                placeholder="Choose an application to spawn">
+                        </div>
+                        <div class="text-center ">
+                            <div v-if="applications === null" class="spinner-border text-info" role="status">
+                            </div>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <a class="list-group-item list-group-item-action"
+                                v-for="application in filteredApplications" href="#" @click="select(application)">
+                                <img v-bind:src="'data:image/png;base64,'+ this.getApplicationImageBytes(application)"
+                                    class="me-3" width="24" height="24">
+                                {{application.name}}
+                                <span class="ms-2 badge text-bg-secondary">{{application.parameters.version}}</span></a>
+                        </ul>
+                    </div>
+                    <div v-else>
+                        <h3>
+                            <img v-bind:src="'data:image/png;base64,'+ this.getApplicationImageBytes(selectedApplication)"
+                                class="me-2" width="20" height="20">{{selectedApplication.name}}
+                        </h3>
+                        <p><code>{{selectedApplication.identifier}}</code></p>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="sslpinning" v-model="pinning">
+                            <label class="form-check-label" for="sslpinning">SSL Pinning</label>
+                        </div>
+                        <div v-if="addedScripts.length > 0">
+                            <h5>Startup scripts</h5>
+                            <ul class="list-group ">
+                                <a class="code list-group-item list-group-item-action my-2"
+                                    v-for="addedScript in addedScripts">
+                                    {{addedScript.name}}</a>
+                            </ul>
+                        </div>
+                        <p v-if="!addingCustomScript && !addingSavedScript">
+                            <a class="me-2" href="#" @click="this.addingCustomScript = true">+ Custom
+                                script</a>
+                            <a href="#" @click="startAddingSavedScript">+ Saved script</a>
+                        </p>
+                        <div v-if="addingCustomScript">
+                            <div class="card my-3">
+                                <div class="card-header d-flex justify-content-between">Add custom script <button
+                                        type="button" class="btn-close" @click="cancelAddingCustomScript"></button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control form-control-sm" id="script-name"
+                                            v-model="addingCustomScriptName" placeholder="Name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <textarea class="form-control code" id="script-code" rows="30"
+                                            v-model="addingCustomScriptCode" placeholder="Script"></textarea>
+                                    </div>
+                                    <div class="d-flex flex-row-reverse">
+                                        <button class="btn btn-primary btn-sm" @click="addCustomScript">Confirm</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="addingSavedScript">
+                            <div class="card my-3">
+                                <div class="card-header d-flex justify-content-between">Add saved script <button
+                                        type="button" class="btn-close" @click="cancelAddingSavedScript"></button>
+                                </div>
+                                <div class="card-body">
+                                    <input class="form-control form-control-sm mb-3" type="text"
+                                        v-model="savedScriptPathsSearch" placeholder="Search">
+                                    <ul v-if="savedScriptPaths" class="list-group list-group-flush">
+                                        <a class="list-group-item list-group-item-action"
+                                            v-for="savedScriptPath in filteredSavedScripts" href="#"
+                                            @click="addSavedScript(savedScriptPath)">
+                                            {{savedScriptPath}}</a>
+                                    </ul>
+                                    <span v-else class="spinner-border spinner-border-sm" role="status">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary me-1" type="button" @click="exploreApplication">Start
+                            app</button>
+                        <button class="btn btn-success" type="button" @click="openInJadx">
+                            <span v-if="jadxLoading" class="spinner-border spinner-border-sm" role="status">
+                            </span>
+                            Open in JADX
+                        </button>
+                    </div>
+                </div>
+                <div v-else>
+                    <div class="row">
+                        <h3>Running jobs</h3>
+                        <div class="col-3">
+                            <ul class="list-group">
+                                <a class="list-group-item list-group-item-action" v-for="job in runningJobs" href="#"
+                                    @click="selectJob(job)" :class="{ active: job === selectedJob }">
+                                    {{job.name}}</a>
+                            </ul>
+                        </div>
+                        <div class="col">
+                            <div v-if="selectedJob" class="card">
+                                <div class="card-body">
+                                    <p>Logs</p>
+                                    <textarea class="form-control code" rows="25" v-model="logs[selectedJob.name]"
+                                        ref="logs" readonly></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        // Prevent exiting the page, since you lose all status
+        // window.onbeforeunload = function () { return false; }
+
+        const app = Vue.createApp({
+            data() {
+                return {
+                    screen: 'home',
+                    applications: null,
+                    search: '',
+                    pinning: false,
+                    selectedApplication: null,
+                    runningApplication: null,
+                    runningJobs: [],
+                    jadxLoading: false,
+                    addingCustomScript: false,
+                    addingCustomScriptName: '',
+                    addingCustomScriptCode: '',
+                    addingSavedScript: false,
+                    savedScriptPaths: null,
+                    savedScriptPathsSearch: '',
+                    addingSavedScriptPath: '',
+                    addedScripts: [],
+                    logs: {},
+                    selectedJob: null,
+                }
+            },
+            mounted() {
+                axios.get(`/api/applications`)
+                    .then(response => {
+                        this.applications = response.data
+                    })
+            },
+            computed: {
+                filteredApplications() {
+                    if (this.search === '') {
+                        return this.applications
+                    }
+                    return this.applications?.filter(application => {
+                        return application.name.toLowerCase().includes(this.search.toLowerCase()) ||
+                            application.identifier.toLowerCase().includes(this.search.toLowerCase())
+                    }) ?? []
+                },
+                filteredSavedScripts() {
+                    if (this.savedScriptPathsSearch === '') {
+                        return this.savedScriptPaths
+                    }
+                    return this.savedScriptPaths.filter(savedScriptPath => {
+                        return savedScriptPath.toLowerCase().includes(this.savedScriptPathsSearch.toLowerCase())
+                    })
+                }
+            },
+            methods: {
+                getApplicationImageBytes(application) {
+                    const base64String = btoa(String.fromCharCode(...new Uint8Array(application.parameters.icons[0].image.data)));
+                    return base64String
+                },
+                selectJob(job) {
+                    this.selectedJob = job
+                    this.$refs.logs.scrollTop = this.$refs.logs.scrollHeight
+                },
+                cancelAddingCustomScript() {
+                    this.addingCustomScript = false
+                    this.addingCustomScriptName = ''
+                    this.addingCustomScriptCode = ''
+                },
+                cancelAddingSavedScript() {
+                    this.addingSavedScript = false
+                    this.savedScriptPaths = null
+                    this.savedScriptPathsSearch = ''
+                    this.addingSavedScriptPath = null
+                },
+                addCustomScript() {
+                    this.addedScripts.push({
+                        name: this.addingCustomScriptName,
+                        code: this.addingCustomScriptCode
+                    })
+                    this.addingCustomScript = false
+                    this.addingCustomScriptName = ''
+                    this.addingCustomScriptCode = ''
+                },
+                async fetchRunningJobs() {
+                    const { data: runningJobs } = await axios.get('/api/running-jobs')
+                    this.runningJobs = runningJobs
+                },
+                select(application) {
+                    this.selectedApplication = application
+                    this.addingCustomScript = false
+                    this.jadxLoading = false
+                },
+                async startAddingSavedScript() {
+                    this.addingSavedScript = true
+                    const { data: savedScriptPaths } = await axios.get('/api/saved-scripts')
+                    this.savedScriptPaths = savedScriptPaths
+                },
+                async exploreApplication() {
+                    await axios.post('/api/open-application', {
+                        identifier: this.selectedApplication.identifier,
+                        sslpinning: this.pinning,
+                        scripts: this.addedScripts
+                    })
+                    this.runningApplication = this.selectedApplication
+                    this.startPollingLogs()
+                    await this.fetchRunningJobs()
+                },
+                async openInJadx() {
+                    this.jadxLoading = true
+                    await axios.post(`/api/open-in-jadx/${this.selectedApplication.identifier}`)
+                    this.jadxLoading = false
+                },
+                async stopJob(job) {
+                    await axios.delete(`/api/running-jobs/${job.name}`)
+                    await this.fetchRunningJobs()
+                },
+                async startPollingLogs() {
+                    const url = new URL('/ws', window.location.href);
+                    url.protocol = url.protocol.replace('http', 'ws');
+                    const webSocket = new WebSocket(url.href)
+                    webSocket.onmessage = (event) => {
+                        const eventObject = JSON.parse(event.data)
+                        const logs = this.logs[eventObject.jobName]
+                        if (!logs) {
+                            this.logs[eventObject.jobName] = eventObject.message + '\n'
+                            return
+                        }
+                        this.logs[eventObject.jobName] = logs + eventObject.message + '\n'
+                        if (eventObject.jobName === this.selectedJob.name) {
+                            this.$refs.logs.scrollTop = this.$refs.logs.scrollHeight
+                        }
+                    }
+                },
+                async addSavedScript(scriptPath) {
+                    const urlEncodedScriptPath = encodeURIComponent(scriptPath)
+                    const { data: script } = await axios.get(`/api/saved-scripts/${urlEncodedScriptPath}`)
+                    this.addedScripts.push({
+                        name: scriptPath,
+                        code: script
+                    })
+                    this.addingSavedScript = false
+                    this.savedScriptPaths = null
+                    this.savedScriptPathsSearch = ''
+                }
+            }
+        })
+        app.mount('#app')
+    </script>
+</body>
+
+</html>
