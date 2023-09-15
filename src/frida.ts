@@ -104,6 +104,7 @@ export async function getApplication(
   const application = applications.find(
     (application) => application.identifier === identifier
   );
+  
   if (!application) {
     throw new Error(`Application ${identifier} not found`);
   }

@@ -170,12 +170,6 @@
                             </div>
                         </div>
                     </div>
-                    <div v-if="pinning" class="row mt-3">
-                        <h3>Network traffic</h3>
-                        <div class="col-12">
-                            <a href="#" @click="openMitmweb()">Open MITWEB in a another tab</a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -288,6 +282,9 @@
                     })
                     this.runningApplication = this.selectedApplication
                     this.startPollingLogs()
+                    if (this.pinning) {
+                        await this.openMitmweb()
+                    }
                     await this.fetchRunningJobs()
                 },
                 async openInJadx() {
