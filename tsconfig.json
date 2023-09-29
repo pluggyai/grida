@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "dist",
-    "module": "ES2022",
+    "module": "NodeNext",
     "target": "ES2022",
     "diagnostics": true,
     "emitDecoratorMetadata": true,

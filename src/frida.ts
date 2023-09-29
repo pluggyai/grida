@@ -3,6 +3,7 @@ import frida, {
   Cancellable,
   Device,
   Message,
+  Scope,
   Script,
   SendMessage,
   Session,
@@ -59,8 +60,9 @@ export async function getDevice() {
   try {
     return await frida.getUsbDevice();
   } catch (error) {
-    // Try adb devices to wake up daemon
-    shelljs.exec('adb devices');
+    shelljs.exec('adb devices', {
+      silent: true,
+    });
     return await frida.getUsbDevice();
   }
 }
@@ -186,4 +188,17 @@ Java.perform(() => {
   send("OK");
 });
 `;
+}
+
+let applications: Application[] | null = null;
+
+export async function enumerateApplications(): Promise<Application[]> {
+  if (applications) {
+    return applications;
+  }
+  const device = await getDevice();
+  applications = await device.enumerateApplications({
+    scope: Scope.Full,
+  });
+  return applications;
 }
