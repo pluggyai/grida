@@ -7,63 +7,79 @@ import frida, {
   Script,
   SendMessage,
   Session,
-} from 'frida';
-import shelljs from 'shelljs';
-import filenamify from 'filenamify';
-import crypto from 'crypto';
+} from 'frida'
+import shelljs from 'shelljs'
+import filenamify from 'filenamify'
+import crypto from 'crypto'
 
 export type Job = {
-  id: string;
-  script: Script;
-  name: string;
-};
-
-export type LogEvent = {
-  jobId: string;
-  message: string;
-};
-
-export async function registerLogListener(
-  callback: (logEvent: LogEvent) => void
-) {
-  logListeners.push(callback);
+  id: string
+  script: Script
+  name: string
 }
 
-let session: Session | null = null;
-const logListeners: ((logEvent: LogEvent) => void)[] = [];
-const runningJobs: Job[] = [];
+type WebsocketEventType = 'log' | 'runningApplication'
+export type WebsocketEvents = LogEvent | RunningApplicationEvent
+
+export type RunningApplicationEvent = WebsocketEvent<
+  {
+    runningApplication: Application | null
+  },
+  'runningApplication'
+>
+export type WebsocketEvent<T, X extends WebsocketEventType> = {
+  type: X
+  payload: T
+}
+
+export type LogEvent = WebsocketEvent<
+  {
+    jobId: string
+    message: string
+  },
+  'log'
+>
+
+export async function registerWebsocketEventListener(
+  callback: (event: WebsocketEvents) => void
+) {
+  websocketEventListeners.push(callback)
+}
+
+let session: Session | null = null
+let runningApplication: Application | null = null
+const websocketEventListeners: ((event: WebsocketEvents) => void)[] = []
+const runningJobs: Job[] = []
 
 export async function stopJob(jobId: string) {
-  console.log('Stopping job:', jobId);
-  const job = getRunningJobs().find((job) => job.id === jobId);
+  console.log('Stopping job:', jobId)
+  const job = getRunningJobs().find((job) => job.id === jobId)
   if (!job) {
-    throw new Error(`Job ${name} not found`);
+    throw new Error(`Job ${name} not found`)
   }
-  await job.script.unload();
+  await job.script.unload()
 }
 
 export function removeJobById(jobId: string): void {
-  const jobIndexToDelete = getRunningJobs().findIndex(
-    (job) => job.id === jobId
-  );
+  const jobIndexToDelete = getRunningJobs().findIndex((job) => job.id === jobId)
   if (jobIndexToDelete === -1) {
-    throw new Error(`Job ${jobId} not found`);
+    throw new Error(`Job ${jobId} not found`)
   }
-  runningJobs.splice(jobIndexToDelete, 1);
+  runningJobs.splice(jobIndexToDelete, 1)
 }
 
 export function getRunningJobs(): Job[] {
-  return runningJobs;
+  return runningJobs
 }
 
 export async function getDevice() {
   try {
-    return await frida.getUsbDevice();
+    return await frida.getUsbDevice()
   } catch (error) {
     shelljs.exec('adb devices', {
       silent: true,
-    });
-    return await frida.getUsbDevice();
+    })
+    return await frida.getUsbDevice()
   }
 }
 
@@ -73,24 +89,24 @@ export async function runJob(
   scriptCode: string,
   messageListener?: (message: Message) => void
 ): Promise<void> {
-  const jobId = crypto.randomUUID();
-  const script = await session.createScript(scriptCode);
+  const jobId = crypto.randomUUID()
+  const script = await session.createScript(scriptCode)
   if (messageListener) {
-    script.message.connect((message) => messageListener(message));
+    script.message.connect((message) => messageListener(message))
   }
-  await script.load();
+  await script.load()
   script.logHandler = (level, text) => {
-    for (const logListener of logListeners) {
-      logListener({ jobId, message: text });
+    for (const logListener of websocketEventListeners) {
+      logListener({ type: 'log', payload: { jobId, message: text } })
     }
-  };
+  }
   const job = {
     id: jobId,
     name,
     script,
-  };
-  runningJobs.push(job);
-  script.destroyed.connect(() => removeJobById(job.id));
+  }
+  runningJobs.push(job)
+  script.destroyed.connect(() => removeJobById(job.id))
 }
 
 export function openJadx(apkFileName: string) {
@@ -100,69 +116,89 @@ export function openJadx(apkFileName: string) {
       async: true,
       silent: true,
     }
-  );
+  )
 }
 
 export function downloadApk(application: Application): string {
+  // check if apks folder exists
+  if (!shelljs.test('-d', './apks')) {
+    shelljs.mkdir('./apks')
+  }
   const output = shelljs.exec(`adb shell pm path ${application.identifier}`, {
     silent: true,
-  });
-  const apkPath = output.stdout.split('\n')[0].replace('package:', '');
-  const downloadedApkPath = `./apks/${filenamify(application.name)}.apk`;
-  shelljs.exec(`adb pull ${apkPath} "${downloadedApkPath}"`);
-  return downloadedApkPath;
+  })
+  const apkPath = output.stdout.split('\n')[0].replace('package:', '')
+  const downloadedApkPath = `./apks/${filenamify(application.name)}.apk`
+  shelljs.exec(`adb pull ${apkPath} "${downloadedApkPath}"`)
+  return downloadedApkPath
 }
 
 export async function getApplication(
   device: Device,
-  identifier: string
+  identifier: string,
+  full?: boolean
 ): Promise<Application> {
-  const applications = await device.enumerateApplications();
+  const applications = await device.enumerateApplications({
+    scope: full ? Scope.Full : Scope.Minimal,
+  })
   const application = applications.find(
     (application) => application.identifier === identifier
-  );
+  )
 
   if (!application) {
-    throw new Error(`Application ${identifier} not found`);
+    throw new Error(`Application ${identifier} not found`)
   }
-  return application;
+  return application
 }
 
 export async function spawnByIdentifier(
   device: Device,
   identifier: string
 ): Promise<Session> {
-  const processId = await device.spawn([identifier]);
-  session = await device.attach(processId);
-  return session;
+  const processId = await device.spawn([identifier])
+  session = await device.attach(processId)
+  runningApplication = await getApplication(device, identifier, true)
+  websocketEventListeners.forEach((listener) => {
+    console.log('Sending runningApplication event')
+    listener({
+      type: 'runningApplication',
+      payload: { runningApplication },
+    })
+  }
+  )
+  return session
+}
+
+export function getRunningApplication() {
+  return runningApplication
 }
 
 export function getSession(): Session {
   if (!session) {
-    throw new Error('Session not found');
+    throw new Error('Session not found')
   }
-  return session;
+  return session
 }
 
 export async function createMethodHook(methodPath: string) {
-  const parts = methodPath.split('.');
-  const classPath = parts.slice(0, -1).join('.');
-  const methodName = parts.slice(-1)[0];
-  const scriptCode = getMethodHookScript(classPath, methodName);
-  console.log('Creating job');
+  const parts = methodPath.split('.')
+  const classPath = parts.slice(0, -1).join('.')
+  const methodName = parts.slice(-1)[0]
+  const scriptCode = getMethodHookScript(classPath, methodName)
+  console.log('Creating job')
   await new Promise<void>((resolve, reject) => {
     runJob(getSession(), methodPath, scriptCode, (message) => {
-      console.log('Received message', message);
+      console.log('Received message', message)
       if (message.type === 'send') {
-        console.log('Message was send, resolving');
-        resolve();
+        console.log('Message was send, resolving')
+        resolve()
       } else if (message.type === 'error') {
-        console.log('Message was error, rejecting');
-        reject(message.description);
+        console.log('Message was error, rejecting')
+        reject(message.description)
       }
-    });
-  });
-  console.log('Resolved');
+    })
+  })
+  console.log('Resolved')
 }
 
 function getMethodHookScript(classPath: string, methodName: string) {
@@ -187,18 +223,18 @@ Java.perform(() => {
   });
   send("OK");
 });
-`;
+`
 }
 
-let applications: Application[] | null = null;
+let applications: Application[] | null = null
 
 export async function enumerateApplications(): Promise<Application[]> {
   if (applications) {
-    return applications;
+    return applications
   }
-  const device = await getDevice();
+  const device = await getDevice()
   applications = await device.enumerateApplications({
     scope: Scope.Full,
-  });
-  return applications;
+  })
+  return applications
 }

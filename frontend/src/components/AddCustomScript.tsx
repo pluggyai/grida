@@ -1,22 +1,31 @@
-import { useState } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { useState } from 'react'
+import { Button, Modal } from 'react-bootstrap'
+import { Script } from '../types'
 
-export default function AddCustomScript() {
-  const [isAddingScript, setIsAddingScript] = useState(false);
-  const [scriptName, setScriptName] = useState('');
-  const [scriptCode, setScriptCode] = useState('');
-  const handleOpen = () => setIsAddingScript(true);
+export default function AddCustomScript({
+  onAddScript,
+}: {
+  onAddScript: (script: Script) => void
+}) {
+  const [isAddingScript, setIsAddingScript] = useState(false)
+  const [scriptName, setScriptName] = useState('')
+  const [scriptCode, setScriptCode] = useState('')
+  const handleOpen = () => setIsAddingScript(true)
   const handleCancel = () => {
-    setIsAddingScript(false);
-    setScriptName('');
-    setScriptCode('');
-  };
-  const save = async () => {};
+    setIsAddingScript(false)
+    setScriptName('')
+    setScriptCode('')
+  }
+
   const handleSave = () => {
-    setIsAddingScript(false);
-    setScriptName('');
-    setScriptCode('');
-  };
+    setIsAddingScript(false)
+    setScriptName('')
+    setScriptCode('')
+    onAddScript({
+      name: scriptName,
+      code: scriptCode,
+    })
+  }
   return (
     <>
       {!isAddingScript && (
@@ -54,5 +63,5 @@ export default function AddCustomScript() {
         </Modal.Footer>
       </Modal>
     </>
-  );
+  )
 }
