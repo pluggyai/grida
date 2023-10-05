@@ -2,12 +2,15 @@
   "name": "grida",
   "type": "module",
   "version": "1.0.0",
+  "main": "./cli.cjs",
   "scripts": {
     "dev:backend": "cd apps/backend && npm run dev",
     "dev:frontend": "cd apps/frontend && npm run dev",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
   },
-  "author": "",
+  "bin": {
+    "grida": "./cli.cjs"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^4.17.17",

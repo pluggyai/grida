@@ -35,77 +35,79 @@ export default function AppSetup({
 
   return (
     <div className="flex items-center justify-center mt-5">
-      <div className="flex items-center justify-center relative">
-        <Button
-          variant={'ghost'}
-          className="text-3xl p-3 absolute left-0 -top-1/8"
-          onClick={() => setApplication(null)}
-        >
-          {'‹'}
-        </Button>
-        <div className="flex items-center gap-2">
-          <img src={bytesToImgSrc(application)} className="w-8 h-8" />
-          <h3 className="text-3xl">{application.name}</h3>
-        </div>
-      </div>
-      <hr className="mb-4 mt-2" />
-      <div className="flex flex-col gap-2">
-        <h5>Standard scripts</h5>
-        <div className="mb-2 flex flex-col">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="sslPinning"
-              onCheckedChange={() => {
-                console.log('clicked checkbox', !useSslPinning)
-                setUseSslPinning((prev) => !prev)
-              }}
-            />
-            <label
-              htmlFor="sslPinning"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-            >
-              SSL Pinning bypass
-            </label>
+      <div>
+        <div className="flex items-center justify-center relative">
+          <Button
+            variant={'ghost'}
+            className="text-3xl p-3 absolute left-0 -top-1/8"
+            onClick={() => setApplication(null)}
+          >
+            {'‹'}
+          </Button>
+          <div className="flex items-center gap-2">
+            <img src={bytesToImgSrc(application)} className="w-8 h-8" />
+            <h3 className="text-3xl">{application.name}</h3>
           </div>
         </div>
-      </div>
-      <hr className="mb-4 mt-2" />
+        <hr className="mb-4 mt-2" />
+        <div className="flex flex-col gap-2">
+          <h5>Standard scripts</h5>
+          <div className="mb-2 flex flex-col">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sslPinning"
+                onCheckedChange={() => {
+                  console.log('clicked checkbox', !useSslPinning)
+                  setUseSslPinning((prev) => !prev)
+                }}
+              />
+              <label
+                htmlFor="sslPinning"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                SSL Pinning bypass
+              </label>
+            </div>
+          </div>
+        </div>
+        <hr className="mb-4 mt-2" />
 
-      <AddScriptFileInput onAddScript={addScript} />
-      <AddCustomScript onAddScript={addScript} />
+        <AddScriptFileInput onAddScript={addScript} />
+        <AddCustomScript onAddScript={addScript} />
 
-      {scripts.length > 0 && (
-        <>
-          <ul className="border border-input rounded-md p-3">
-            {scripts.map((script, i) => (
-              <>
-                <li
-                  className="flex flex-row items-center justify-between code list-group-item list-group-item-action"
-                  key={script.name}
-                >
-                  {script.name}{' '}
-                  <span
-                    onClick={() =>
-                      setScripts((scripts_) =>
-                        scripts_.filter((_, i_) => i_ !== i)
-                      )
-                    }
-                    className="cursor-pointer"
+        {scripts.length > 0 && (
+          <>
+            <ul className="border border-input rounded-md p-3">
+              {scripts.map((script, i) => (
+                <>
+                  <li
+                    className="flex flex-row items-center justify-between code list-group-item list-group-item-action"
+                    key={script.name}
                   >
-                    ✕
-                  </span>
-                </li>
-                {i !== scripts.length - 1 && <hr className="my-2" />}
-              </>
-            ))}
-          </ul>
-        </>
-      )}
-      <hr className="mb-4 mt-2" />
+                    {script.name}{' '}
+                    <span
+                      onClick={() =>
+                        setScripts((scripts_) =>
+                          scripts_.filter((_, i_) => i_ !== i)
+                        )
+                      }
+                      className="cursor-pointer"
+                    >
+                      ✕
+                    </span>
+                  </li>
+                  {i !== scripts.length - 1 && <hr className="my-2" />}
+                </>
+              ))}
+            </ul>
+          </>
+        )}
+        <hr className="mb-4 mt-2" />
 
-      <div className="flex gap-4 mt-4">
-        <Button onClick={handleOpenApp}>Start app</Button>
-        <JadxButton application={application} />
+        <div className="flex gap-4 mt-4">
+          <Button onClick={handleOpenApp}>Start app</Button>
+          <JadxButton application={application} />
+        </div>
       </div>
     </div>
   )
