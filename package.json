@@ -1,5 +1,5 @@
 {
-  "name": "grida",
+  "name": "grida-android",
   "type": "module",
   "version": "1.0.0",
   "main": "./cli.cjs",
@@ -9,7 +9,7 @@
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "bin": {
-    "grida": "./cli.cjs"
+    "grida-android": "./cli.cjs"
   },
   "license": "ISC",
   "devDependencies": {
