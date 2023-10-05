@@ -2,19 +2,16 @@
   "name": "grida",
   "type": "module",
   "version": "1.0.0",
-  "main": "./cli.cjs",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev:backend": "cd apps/backend && npm run dev",
-    "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev": "nodemon --esm src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bin": {
-    "grida": "./cli.cjs"
-  },
+  "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^4.17.17",
-    "concurrently": "^8.2.1",
     "ts-node": "^10.9.1"
   },
   "dependencies": {

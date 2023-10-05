@@ -284,7 +284,7 @@
                     this.savedScriptPaths = savedScriptPaths
                 },
                 async exploreApplication() {
-                    await axios.post('/api/open-application', {
+                    await axios.post('/api/application', {
                         identifier: this.selectedApplication.identifier,
                         sslpinning: this.pinning,
                         scripts: this.addedScripts
