@@ -1,4 +1,3 @@
-import { Scope } from 'frida'
 import { readFileSync } from 'fs'
 import express, { NextFunction, Response, Request } from 'express'
 import {
@@ -46,7 +45,6 @@ const FRIDA_UNIVERSAL_SCRIPT = readFileSync(
 const { app } = expressWs(express())
 
 app.use(express.json())
-app.use(express.static('./src/static'))
 app.use(cors())
 
 app.get(
@@ -81,10 +79,6 @@ app.ws('/ws', (ws) => {
   registerWebsocketEventListener((event) => {
     ws.send(JSON.stringify(event))
   })
-})
-
-app.get('/', (req, res) => {
-  res.send(readFileSync('./src/pages/index.html').toString())
 })
 
 app.post(
@@ -140,12 +134,13 @@ app.post(
   })
 )
 
-app.delete('/api/application', 
+app.delete(
+  '/api/application',
   asyncHandler(async (req, res) => {
     await stopApplication()
     res.send()
-  }
-))
+  })
+)
 app.delete(
   '/api/running-jobs/:jobId',
   asyncHandler(async (req, res) => {
@@ -154,7 +149,6 @@ app.delete(
     res.send()
   })
 )
-
 
 app.post(
   '/api/open-mitmweb',
