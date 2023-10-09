@@ -2,14 +2,11 @@
   "name": "grida-android",
   "type": "module",
   "version": "1.0.0",
-  "main": "./cli.cjs",
   "scripts": {
     "dev:backend": "cd apps/backend && npm run dev",
     "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
-  },
-  "bin": {
-    "grida-android": "./cli.cjs"
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:all": "cd apps/backend && npm install && cd ../frontend && npm install"
   },
   "license": "ISC",
   "devDependencies": {

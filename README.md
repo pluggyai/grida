@@ -10,14 +10,16 @@ User graphical reverse engineering tool for android dynamic instrumentation.
 - [x] Mitmweb auto configuration
 - [x] Quick APK download and open with JADx
 
-## How to use?
+## Installation
 
 ```bash
-npx grida
+git clone git@github.com:pluggyai/grida.git
+cd grida
+npm run install:all
 ```
 
-or
+## Usage
 
 ```bash
-npm i -g grida && grida
+npm run dev
 ```
