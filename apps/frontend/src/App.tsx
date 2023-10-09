@@ -70,13 +70,17 @@ function App() {
             className="w-full h-96 rounded-md border border-white resize-y overflow-auto py-4 px-7"
             ref={codeElement}
           >
-            {applicationLogs.map((log) => {
-              return (
-                <code className="block">
-                  [{log.jobName}] {log.message}
-                </code>
-              )
-            })}
+            {applicationLogs.length === 0 ? (
+              <code className="block">You will see your logs here...</code>
+            ) : (
+              applicationLogs.map((log) => {
+                return (
+                  <code className="block">
+                    [{log.jobName}] {log.message}
+                  </code>
+                )
+              })
+            )}
           </div>
           <Button
             variant="secondary"

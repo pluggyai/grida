@@ -23,3 +23,10 @@ npm run install:all
 ```bash
 npm run dev
 ```
+
+You will see your apps and you can spawn them and see the logs in the web console.
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="img/grida.png" style="width: 50%; margin-right: 16px;" />
+  <img src="img/grida-logs.png" style="width: 50%;" />
+</div>
