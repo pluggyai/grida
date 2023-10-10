@@ -12,6 +12,13 @@ User graphical reverse engineering tool for android dynamic instrumentation.
 
 ## Installation
 
+### Requirements
+
+You need to have the following tools installed to use fully grida:
+- Frida: https://frida.re/docs/installation/
+- JADX: https://github.com/skylot/jadx
+- Mitmweb: https://mitmproxy.org/
+
 ```bash
 git clone git@github.com:pluggyai/grida.git
 cd grida
